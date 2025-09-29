@@ -2,16 +2,12 @@ package com.microsoft.migration.assets.worker.service;
 
 import com.microsoft.migration.assets.worker.model.ImageMetadata;
 import com.microsoft.migration.assets.worker.repository.ImageMetadataRepository;
+import com.microsoft.migration.assets.worker.storage.ObjectStorage;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Profile;
 import org.springframework.stereotype.Service;
-import software.amazon.awssdk.core.sync.RequestBody;
-import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
-import software.amazon.awssdk.services.s3.model.GetUrlRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
@@ -20,33 +16,19 @@ import java.nio.file.StandardCopyOption;
 @Profile("!dev")
 @RequiredArgsConstructor
 public class S3FileProcessingService extends AbstractFileProcessingService {
-    private final S3Client s3Client;
+    private final ObjectStorage objectStorage;
     private final ImageMetadataRepository imageMetadataRepository;
-    
-    @Value("${aws.s3.bucket}")
-    private String bucketName;
 
     @Override
     public void downloadOriginal(String key, Path destination) throws Exception {
-        GetObjectRequest request = GetObjectRequest.builder()
-                .bucket(bucketName)
-                .key(key)
-                .build();
-                
-        try (var inputStream = s3Client.getObject(request)) {
+        try (InputStream inputStream = objectStorage.open(key)) {
             Files.copy(inputStream, destination, StandardCopyOption.REPLACE_EXISTING);
         }
     }
 
     @Override
     public void uploadThumbnail(Path source, String key, String contentType) throws Exception {
-        PutObjectRequest request = PutObjectRequest.builder()
-                .bucket(bucketName)
-                .key(key)
-                .contentType(contentType)
-                .build();
-                
-        s3Client.putObject(request, RequestBody.fromFile(source));
+        objectStorage.upload(source, key, contentType);
         
         // Save or update thumbnail metadata
         ImageMetadata metadata = imageMetadataRepository.findById(extractOriginalKey(key))
@@ -63,16 +45,12 @@ public class S3FileProcessingService extends AbstractFileProcessingService {
 
     @Override
     public String getStorageType() {
-        return "s3";
+        return "s3"; // Keeping "s3" for backward compatibility with existing message producers
     }
 
     @Override
     protected String generateUrl(String key) {
-        GetUrlRequest request = GetUrlRequest.builder()
-                .bucket(bucketName)
-                .key(key)
-                .build();
-        return s3Client.utilities().getUrl(request).toString();
+        return objectStorage.publicUrl(key);
     }
 
     private String extractOriginalKey(String key) {
