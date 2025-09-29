@@ -29,6 +29,12 @@
         <dependency>
             <groupId>software.amazon.awssdk</groupId>
             <artifactId>s3</artifactId>
+            <scope>provided</scope> <!-- Temporarily set to provided to trigger compile errors on direct usage -->
+        </dependency>
+        <dependency>
+            <groupId>com.azure</groupId>
+            <artifactId>azure-storage-blob</artifactId>
+            <version>12.26.0</version>
         </dependency>
         <dependency>
             <groupId>org.projectlombok</groupId>

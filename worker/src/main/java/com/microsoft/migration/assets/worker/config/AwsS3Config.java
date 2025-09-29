@@ -1,30 +1,22 @@
 package com.microsoft.migration.assets.worker.config;
 
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
-import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
-import software.amazon.awssdk.regions.Region;
-import software.amazon.awssdk.services.s3.S3Client;
 
+/**
+ * @deprecated This configuration is deprecated and will be removed in a future version.
+ * AWS S3 support has been migrated to Azure Blob Storage using the ObjectStorage abstraction.
+ * 
+ * Decommission checklist (for follow-up PR):
+ * - Remove AWS S3 dependency from pom.xml
+ * - Remove legacy AWS properties from application.properties  
+ * - Consider renaming S3FileProcessingService to AzureFileProcessingService or CloudFileProcessingService
+ * - Update getStorageType() to return "azure" and update message producers accordingly
+ * - Remove this configuration class entirely
+ */
+@Deprecated(since = "0.0.2", forRemoval = true)
 @Configuration
 public class AwsS3Config {
-    @Value("${aws.accessKeyId}")
-    private String accessKeyId;
-
-    @Value("${aws.secretKey}")
-    private String secretKey;
-
-    @Value("${aws.region}")
-    private String region;
-
-    @Bean
-    public S3Client s3Client() {
-        AwsBasicCredentials awsCredentials = AwsBasicCredentials.create(accessKeyId, secretKey);
-        return S3Client.builder()
-                .region(Region.of(region))
-                .credentialsProvider(StaticCredentialsProvider.create(awsCredentials))
-                .build();
-    }
+    // This configuration class has been neutralized.
+    // All AWS S3 client bean logic has been removed.
+    // Use AzureBlobStorageConfig and ObjectStorage abstraction instead.
 }
